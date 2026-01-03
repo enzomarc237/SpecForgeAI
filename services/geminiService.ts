@@ -77,7 +77,10 @@ export const generatePRDText = async (input: ProjectInput): Promise<PRDSection[]
     3. Functional Requirements
     4. Non-Functional Requirements (Security, Performance)
     5. Architecture & Tech Stack (Suggest modern stack)
-    6. UI/UX Guidelines (High level)
+    6. Visual Design & Wireframe Prompts:
+       - Provide detailed image generation prompts for at least 3 key screens (e.g., Landing Page, Dashboard, Mobile View).
+       - Each prompt should be descriptive, mentioning layout, colors (based on the '${input.style}' vibe), and UI components, suitable for generating high-fidelity wireframes/mockups using AI image tools.
+    7. UI/UX Guidelines (High level)
 
     Format the content of each section in clean Markdown (using lists, headers, bold text where appropriate).
     Ensure the content is professional, detailed, and actionable for developers.

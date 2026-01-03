@@ -37,6 +37,7 @@ const SimpleMarkdown: React.FC<{ content: string }> = ({ content }) => {
 export const PRDDisplay: React.FC<PRDDisplayProps> = ({ sections, branding }) => {
   const [activeSectionId, setActiveSectionId] = useState(sections[0]?.id);
   const [isExporting, setIsExporting] = useState(false);
+  const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
 
   const activeSection = sections.find(s => s.id === activeSectionId) || sections[0];
 
@@ -163,7 +164,6 @@ export const PRDDisplay: React.FC<PRDDisplayProps> = ({ sections, branding }) =>
             .replace(/\n/gim, '<br />');
         
         // Wrap lists (simplistic, assumes contiguous lists)
-        // A robust parser would be better, but for this snippet:
         contentHtml = contentHtml.replace(/(<li>.*<\/li>)/gim, '<ul>$1</ul>').replace(/<\/ul><br \/><ul>/gim, '');
 
         htmlContent += `
@@ -183,6 +183,29 @@ export const PRDDisplay: React.FC<PRDDisplayProps> = ({ sections, branding }) =>
     const link = document.createElement('a');
     link.href = url;
     link.download = 'specforge-prd.html';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleCopySection = async () => {
+    if (!activeSection) return;
+    try {
+      await navigator.clipboard.writeText(activeSection.content);
+      setCopyFeedback(activeSection.id);
+      setTimeout(() => setCopyFeedback(null), 2000);
+    } catch (err) {
+      console.error('Failed to copy', err);
+    }
+  };
+
+  const handleDownloadSection = () => {
+    if (!activeSection) return;
+    const blob = new Blob([activeSection.content], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${activeSection.title.toLowerCase().replace(/\s+/g, '-')}.md`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -210,7 +233,7 @@ export const PRDDisplay: React.FC<PRDDisplayProps> = ({ sections, branding }) =>
         </nav>
         
         <div className="space-y-2 mt-auto pt-4 border-t border-slate-800">
-            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider px-2">Export Options</h3>
+            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider px-2">Export Full Doc</h3>
             <Button onClick={handleExportPDF} variant="secondary" className="w-full text-xs" disabled={isExporting}>
                 Download PDF
             </Button>
@@ -229,9 +252,34 @@ export const PRDDisplay: React.FC<PRDDisplayProps> = ({ sections, branding }) =>
       <div className="flex-1 p-8 overflow-y-auto bg-slate-850">
         {activeSection ? (
           <div className="max-w-3xl mx-auto">
-            <h2 className="text-3xl font-bold text-white mb-6 border-b border-slate-700 pb-4">
-              {activeSection.title}
-            </h2>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 border-b border-slate-700 pb-4 gap-4">
+              <h2 className="text-3xl font-bold text-white">
+                {activeSection.title}
+              </h2>
+              <div className="flex gap-2">
+                 <Button 
+                   onClick={handleCopySection} 
+                   variant="outline" 
+                   className={`text-xs px-3 h-8 ${copyFeedback === activeSection.id ? 'text-emerald-400 border-emerald-500/50' : ''}`}
+                 >
+                   {copyFeedback === activeSection.id ? (
+                     <>
+                        <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
+                        Copied
+                     </>
+                   ) : (
+                     <>
+                        <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+                        Copy
+                     </>
+                   )}
+                 </Button>
+                 <Button onClick={handleDownloadSection} variant="outline" className="text-xs px-3 h-8" title="Export Section as Markdown">
+                    <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                    Export
+                 </Button>
+              </div>
+            </div>
             <SimpleMarkdown content={activeSection.content} />
           </div>
         ) : (
